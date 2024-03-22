@@ -168,6 +168,25 @@ func Mprotect(t *kernel.Task, sysno uintptr, args arch.SyscallArguments) (uintpt
 	return 0, nil, err
 }
 
+// PKeyMprotect implements linux syscall pkey_mprotect(2).
+func PKeyMprotect(t *kernel.Task, sysno uintptr, args arch.SyscallArguments) (uintptr, *kernel.SyscallControl,error) {
+	// void* addr : starting address must be aligned to a page boundary.
+	addr := args[0].Pointer()
+	// size_t len : size of address range to set the access flags for.
+	length := args[1].Uint64()
+	// int prot : access flags.
+	prot := args[2].Int()
+	// int pkey: protection key.
+	pkey := args[3].Int()
+	// TODO: Implement MProtectKey as part of MemoryManager.
+	err := t.MemoryManager().MProtectKey(args[0].Pointer(), length, hostarch.AccessType{
+		Read:    linux.PROT_READ&prot != 0,
+		Write:   linux.PROT_WRITE&prot != 0,
+		Execute: linux.PROT_EXEC&prot != 0,
+	}, pkey, linux.PROT_GROWSDOWN&prot != 0)
+	return 0, nil, err
+}
+
 // Madvise implements linux syscall madvise(2).
 func Madvise(t *kernel.Task, sysno uintptr, args arch.SyscallArguments) (uintptr, *kernel.SyscallControl, error) {
 	addr := args[0].Pointer()
